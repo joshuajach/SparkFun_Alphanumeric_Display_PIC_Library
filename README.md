@@ -1,4 +1,14 @@
-C Port for PIC18F57Q84 Curiosity Nana
+C Port for PIC18F57Q84 Curiosity Nano
+
+I2C1
+
+SCL1 RB1
+
+SDA1 RB2
+
+LED LED_RF3
+
+
 SparkFun Alphanumeric Display Library
 ========================================
 
