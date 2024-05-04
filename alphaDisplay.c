@@ -147,16 +147,18 @@ static const uint16_t alphanumeric_segs[] = {
 };
 
 bool enableSystemClock() {
-    uint8_t data = ALPHA_CMD_SYSTEM_SETUP | 1;
-    bool status = I2C1_Host_Write(DEFAULT_ADDRESS, &data, 1);
+    uint8_t data[1] = {};
+    data[0] = ALPHA_CMD_SYSTEM_SETUP | 1;
+    bool status = I2C1_Host_Write(DEFAULT_ADDRESS, data, 1);
     DELAY_milliseconds(10); // Allow display to start
     return (status);
 }
 
 bool setBrightness(uint8_t level) {
     level = (level <= 15) ? level : 1;
-    uint8_t data = ALPHA_CMD_DIMMING_SETUP | level;
-    return I2C1_Host_Write(DEFAULT_ADDRESS, &data, 1);
+    uint8_t data[1] = {};
+    data[0] = ALPHA_CMD_DIMMING_SETUP | level;
+    return I2C1_Host_Write(DEFAULT_ADDRESS, data, 1);
 }
 
 bool setBlinkRate(float rate) {
@@ -170,9 +172,9 @@ bool setBlinkRate(float rate) {
     else {
         blinkRate = ALPHA_BLINK_RATE_NOBLINK;
     }
-
-    uint8_t data = ALPHA_CMD_DISPLAY_SETUP | (uint8_t) (blinkRate << 1);
-    return I2C1_Host_Write(DEFAULT_ADDRESS, &data, 1);
+    uint8_t data[1] = {};
+    data[0] = ALPHA_CMD_DISPLAY_SETUP | (uint8_t) (blinkRate << 1) | displayOnOff;
+    return I2C1_Host_Write(DEFAULT_ADDRESS, data, 1);
 }
 
 bool setDisplayOnOff(bool turnOnDisplay) {
@@ -181,31 +183,16 @@ bool setDisplayOnOff(bool turnOnDisplay) {
     } else {
         displayOnOff = ALPHA_DISPLAY_OFF;
     }
-    uint8_t dataToWrite = ALPHA_CMD_DISPLAY_SETUP | (uint8_t) (blinkRate << 1) | displayOnOff;
-    return I2C1_Host_Write(DEFAULT_ADDRESS, &dataToWrite, 1);
+    uint8_t data[1] = {};
+    data[0] = ALPHA_CMD_DISPLAY_SETUP | (uint8_t) (blinkRate << 1) | displayOnOff;
+    return I2C1_Host_Write(DEFAULT_ADDRESS, data, 1);
 }
-
 bool initialize() {
     // Turn on system clock of all displays
-    if (enableSystemClock() == false) {
-        return false;
-    }
-
-    // Set brightness of all displays to full brightness
-    if (setBrightness(15) == false) {
-        return false;
-    }
-
-    // Turn blinking off for all displays
-    if (setBlinkRate(ALPHA_BLINK_RATE_NOBLINK) == false) {
-        return false;
-    }
-
-    // Turn on all displays
-    if (setDisplayOnOff(true) == false) {
-        return false;
-    }
-
+    enableSystemClock();
+    setBrightness(15);
+    setBlinkRate(ALPHA_BLINK_RATE_NOBLINK); 
+    setDisplayOnOff(true);
     return true;
 }
 
@@ -245,22 +232,10 @@ bool clear() {
 
 bool Alpha_Begin(void) {
 
-    if (isConnected() == false) {
-        return false;
-    }
-    DELAY_milliseconds(100);
-
-    if (initialize() == false) {
-        return false;
-    }
-
-    if (clear() == false) // Clear all displays
-    {
-        return false;
-    }
-    DELAY_milliseconds(100);
+    DELAY_milliseconds(20);
+    initialize();
+    clear();
     displayContent[4] = '\0'; // Terminate the array because we are doing direct prints
-
     return true;
 }
 // Set or clear the decimal on/off bit
@@ -346,7 +321,7 @@ void illuminateSegment(uint8_t segment, uint8_t digit) {
     // Determine the data bit
     if (row > 7)
         row -= 8;
-    uint8_t dat = 0b1 << row;
+    uint8_t dat = (uint8_t) 1 << row;
 
     displayRAM[adr] = displayRAM[adr] | dat;
 }
